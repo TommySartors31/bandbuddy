@@ -1,5 +1,5 @@
 import { hasUsedRankedToday, submitPerformance, getActiveSeason, listMusic, listAssignments, assignmentsForStudent } from "../data.js";
-import { Recorder, uploadRecording, uploadRecordingFile } from "../storage.js";
+import { Recorder, uploadRecording, uploadRecordingFile, mediaPlayerHTML } from "../storage.js";
 
 export async function render(container, ctx) {
   const { user, profile } = ctx;
@@ -59,8 +59,8 @@ export async function render(container, ctx) {
           <span id="recStatus" class="muted" style="margin-left:10px"></span>
         </div>
         <div class="section-gap">
-          <label>Or upload a recording (e.g. a Voice Memo from your iPhone, for better audio quality)</label>
-          <input id="fileInput" type="file" accept="audio/*,.m4a,.caf" />
+          <label>Or upload a recording or video (e.g. a Voice Memo or video from your iPhone)</label>
+          <input id="fileInput" type="file" accept="audio/*,video/*,.m4a,.caf,.mov,.mp4" />
         </div>
         <div id="playback"></div>
         <div id="progress" class="muted" style="margin-top:8px"></div>
@@ -120,7 +120,7 @@ export async function render(container, ctx) {
       container.querySelector("#recStatus").textContent = "";
       recBtn.textContent = "● Start recording";
       const url = URL.createObjectURL(file);
-      container.querySelector("#playback").innerHTML = `<audio controls src="${url}"></audio>`;
+      container.querySelector("#playback").innerHTML = mediaPlayerHTML(url, file);
       submitBtn.disabled = false;
     });
 
