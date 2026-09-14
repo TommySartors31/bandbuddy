@@ -1,5 +1,5 @@
-import { listTournaments, createTournament, endTournament, isEligible, getTournamentAttempts, submitPerformance, getLeaderboard, getTournamentLeaderboard } from "../data.js";
-import { Recorder, uploadRecording, uploadRecordingFile } from "../storage.js";
+import { listTournaments, createTournament, isEligible, getTournamentAttempts, submitPerformance, getLeaderboard, getTournamentLeaderboard } from "../data.js";
+import { Recorder, uploadRecording, uploadRecordingFile, mediaPlayerHTML } from "../storage.js";
 import { INSTRUMENTS } from "../firebase-config.js";
 
 export async function render(container, ctx) {
@@ -22,26 +22,23 @@ export async function render(container, ctx) {
     listEl.innerHTML = `<p class="muted">No tournaments posted yet.</p>`;
   } else {
     for (const t of tournaments) {
-      const ended = t.status === "ended";
       const eligible = isEligible(t, studentForCheck);
       const attempts = await getTournamentAttempts(t.id, user.uid);
       const div = document.createElement("div");
       div.className = "card";
       div.innerHTML = `
-        <div class="card-title">${t.format === "duos" ? "DUOS" : "SOLO"}${ended ? ` · <span class="badge">ENDED</span>` : ""}</div>
+        <div class="card-title">${t.format === "duos" ? "DUOS" : "SOLO"}</div>
         <h3>${t.name}</h3>
         <p class="muted" style="font-size:0.9rem">${t.description || ""}</p>
         ${t.prizeText ? `<p><strong>Prize:</strong> ${t.prizeText}</p>` : ""}
         <p class="muted" style="font-size:0.85rem">${attempts.length}/${t.attemptsAllowed || 3} attempts used</p>
-        ${ended ? `<span class="badge">Tournament ended — no new attempts</span>` :
-          !eligible ? `<span class="badge">Not eligible</span>` :
+        ${!eligible ? `<span class="badge">Not eligible</span>` :
           attempts.length >= (t.attemptsAllowed || 3)
             ? `<span class="badge graded">All attempts used</span>`
             : `<button class="btn" data-id="${t.id}" data-attempt="${attempts.length + 1}">Record attempt ${attempts.length + 1}</button>`}
         <div class="tourney-record" data-for="${t.id}"></div>
         <button class="btn" style="margin-top:10px" data-lb="${t.id}">View leaderboard</button>
         <div class="tourney-lb" data-lbfor="${t.id}"></div>
-        ${canCreate && !ended ? `<button class="btn danger" style="margin-top:10px" data-end="${t.id}">End tournament</button>` : ""}
       `;
       listEl.appendChild(div);
     }
@@ -64,14 +61,6 @@ export async function render(container, ctx) {
           </div>`).join("") : `<p class="muted">No graded attempts yet.</p>`;
       });
     });
-    listEl.querySelectorAll("button[data-end]").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const t = tournaments.find(x => x.id === btn.dataset.end);
-        if (!confirm(`End "${t?.name || "this tournament"}"? Students won't be able to submit new attempts, but existing attempts and the leaderboard stay visible.`)) return;
-        await endTournament(btn.dataset.end, user.uid);
-        render(container, ctx);
-      });
-    });
   }
 
   function openRecordUI(tournamentId, attemptNumber) {
@@ -82,8 +71,8 @@ export async function render(container, ctx) {
         <button class="btn" id="rec">● Start recording</button>
         <div id="pb"></div>
         <div class="section-gap">
-          <label>Or upload a recording (e.g. a Voice Memo from your iPhone)</label>
-          <input id="fileInput" type="file" accept="audio/*,.m4a,.caf" />
+          <label>Or upload a recording or video (e.g. a Voice Memo or video from your iPhone)</label>
+          <input id="fileInput" type="file" accept="audio/*,video/*,.m4a,.caf,.mov,.mp4" />
         </div>
         <button class="btn primary" id="sub" disabled style="margin-top:8px">Submit attempt ${attemptNumber}</button>
         <div id="err" class="error-text"></div>
@@ -111,7 +100,7 @@ export async function render(container, ctx) {
       file = picked;
       blob = null;
       slot.querySelector("#rec").textContent = "● Start recording";
-      slot.querySelector("#pb").innerHTML = `<audio controls src="${URL.createObjectURL(file)}"></audio>`;
+      slot.querySelector("#pb").innerHTML = mediaPlayerHTML(URL.createObjectURL(file), file);
       slot.querySelector("#sub").disabled = false;
     });
     slot.querySelector("#sub").addEventListener("click", async () => {
