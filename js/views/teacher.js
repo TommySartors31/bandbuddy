@@ -1,5 +1,6 @@
 import { getPendingGrades, gradePerformance, listStudents, listMusic, getAuditLog } from "../data.js";
 import { renderAssignmentsPanel } from "./shared/assignments-panel.js";
+import { mediaPlayerHTML } from "../storage.js";
 
 export async function render(container, ctx, params) {
   const tab = params?.tab || "queue";
@@ -58,7 +59,7 @@ export async function render(container, ctx, params) {
       <div class="card-title">${p.type.toUpperCase()} ${p.tournamentId ? "· Tournament" : ""}</div>
       <h3>${nameFor(p.uid)}</h3>
       <p class="muted">${p.instrument || ""} · Attempt ${p.attemptNumber || 1}</p>
-      ${p.recordingURL ? `<audio controls src="${p.recordingURL}"></audio>` : `<p class="muted">No recording attached.</p>`}
+      ${p.recordingURL ? mediaPlayerHTML(p.recordingURL) : `<p class="muted">No recording attached.</p>`}
       <label>Grade (%)</label>
       <input type="number" min="0" max="100" class="gradeInput" data-id="${p.id}" />
       <label>Feedback (optional)</label>
