@@ -51,6 +51,18 @@ export function uploadRecordingFile(file, uid, onProgress) {
   return uploadToCloudinary(file, `${uid}-${Date.now()}-${file.name}`, `recordings/${uid}`, onProgress);
 }
 
+// Picks <video> vs <audio> playback markup for a recording. Pass the File
+// object when you have one (upload previews); pass just the URL when you
+// only have the stored recordingURL (grading queue) — it falls back to
+// guessing from the file extension in that case.
+export function mediaPlayerHTML(url, fileOrType) {
+  const type = typeof fileOrType === "string" ? fileOrType : (fileOrType?.type || "");
+  const isVideo = type.startsWith("video/") || /\.(mp4|mov|m4v|avi|mkv|wmv|3gp)(\?|$)/i.test(url);
+  return isVideo
+    ? `<video controls style="max-width:100%" src="${url}"></video>`
+    : `<audio controls src="${url}"></audio>`;
+}
+
 // Simple in-browser recorder wrapper used by the Ranked/Practice/Tournament views.
 export class Recorder {
   constructor() {
